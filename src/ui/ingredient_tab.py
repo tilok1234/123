@@ -1,0 +1,157 @@
+import customtkinter as ctk
+from src.ui.components.shared_widgets import create_labeled_entry
+from src.ui.dialogs import show_error, show_info, ask_yes_no
+from src.services.validation_service import sanitize_id, validate_ingredient
+from src.services.dependency_service import is_ingredient_in_use
+from src.services.storage_service import save_ingredients
+
+class IngredientTab(ctk.CTkFrame):
+    def __init__(self, master, state, on_ingredients_changed=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.state = state
+        self.on_ingredients_changed = on_ingredients_changed
+        self.current_editing_id = None
+
+        # Split into left (form) and right (list)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.setup_form_panel()
+        self.setup_list_panel()
+
+        self.refresh_list()
+
+    def setup_form_panel(self):
+        self.form_frame = ctk.CTkFrame(self)
+        self.form_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+        ctk.CTkLabel(self.form_frame, text="Ingredient Details", font=("Arial", 16, "bold")).grid(row=0, column=0, columnspan=2, pady=10)
+
+        self.id_entry = create_labeled_entry(self.form_frame, "Internal ID:", 1, 0)
+        self.name_entry = create_labeled_entry(self.form_frame, "Display Name:", 2, 0)
+
+        self.type_combo = ctk.CTkComboBox(self.form_frame, values=["material", "consumable", "quest_item"])
+        ctk.CTkLabel(self.form_frame, text="Item Type:").grid(row=3, column=0, sticky="w", padx=5, pady=2)
+        self.type_combo.grid(row=3, column=1, sticky="w", padx=5, pady=2)
+
+        self.value_entry = create_labeled_entry(self.form_frame, "Base Value:", 4, 0, default_val="0")
+        self.stack_entry = create_labeled_entry(self.form_frame, "Max Stack:", 5, 0, default_val="99")
+
+        btn_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        btn_frame.grid(row=6, column=0, columnspan=2, pady=20)
+
+        ctk.CTkButton(btn_frame, text="New", command=self.clear_form, width=80).pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Save", command=self.save_ingredient, width=80).pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Delete", command=self.delete_ingredient, width=80, fg_color="red", hover_color="darkred").pack(side="left", padx=5)
+
+    def setup_list_panel(self):
+        self.list_frame = ctk.CTkFrame(self)
+        self.list_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+
+        ctk.CTkLabel(self.list_frame, text="Ingredients Library", font=("Arial", 16, "bold")).pack(pady=10)
+
+        self.listbox = ctk.CTkScrollableFrame(self.list_frame)
+        self.listbox.pack(fill="both", expand=True, padx=5, pady=5)
+
+        self.list_buttons = []
+
+    def clear_form(self):
+        self.current_editing_id = None
+        self.id_entry.delete(0, 'end')
+        self.name_entry.delete(0, 'end')
+        self.type_combo.set("material")
+        self.value_entry.delete(0, 'end')
+        self.value_entry.insert(0, "0")
+        self.stack_entry.delete(0, 'end')
+        self.stack_entry.insert(0, "99")
+
+    def load_into_form(self, ingredient_id):
+        data = self.state.ingredient_library.get(ingredient_id)
+        if not data: return
+
+        self.clear_form()
+        self.current_editing_id = ingredient_id
+
+        self.id_entry.insert(0, ingredient_id)
+        self.name_entry.insert(0, data.get("display_name", ""))
+        self.type_combo.set(data.get("item_type", "material"))
+
+        self.value_entry.delete(0, 'end')
+        self.value_entry.insert(0, str(data.get("base_value", 0)))
+
+        self.stack_entry.delete(0, 'end')
+        self.stack_entry.insert(0, str(data.get("max_stack", 99)))
+
+    def refresh_list(self):
+        for btn in self.list_buttons:
+            btn.destroy()
+        self.list_buttons.clear()
+
+        for ing_id, data in sorted(self.state.ingredient_library.items()):
+            display_name = data.get("display_name", ing_id)
+            btn = ctk.CTkButton(self.listbox, text=f"{display_name} ({ing_id})",
+                                anchor="w", fg_color="transparent", text_color=("black", "white"),
+                                command=lambda i=ing_id: self.load_into_form(i))
+            btn.pack(fill="x", pady=2)
+            self.list_buttons.append(btn)
+
+    def save_ingredient(self):
+        raw_id = self.id_entry.get()
+        ingredient_id = sanitize_id(raw_id)
+
+        if raw_id != ingredient_id:
+            self.id_entry.delete(0, 'end')
+            self.id_entry.insert(0, ingredient_id)
+
+        data = {
+            "display_name": self.name_entry.get().strip(),
+            "item_type": self.type_combo.get(),
+            "base_value": self.value_entry.get().strip(),
+            "max_stack": self.stack_entry.get().strip()
+        }
+
+        is_valid, error_msg = validate_ingredient(ingredient_id, data, self.state, self.current_editing_id)
+
+        if not is_valid:
+            show_error("Validation Error", error_msg)
+            return
+
+        # If ID changed, we might need to delete old one if not in use, or warn.
+        # For simplicity in V1, just treat as new if ID changes and warn about orphan.
+        if self.current_editing_id and self.current_editing_id != ingredient_id:
+            in_use, recipes = is_ingredient_in_use(self.current_editing_id, self.state.recipe_library)
+            if in_use:
+                show_error("Cannot change ID", f"Cannot rename ID. Old ID '{self.current_editing_id}' is in use by recipes: {', '.join(recipes)}")
+                return
+            del self.state.ingredient_library[self.current_editing_id]
+
+        self.state.ingredient_library[ingredient_id] = data
+        self.current_editing_id = ingredient_id
+
+        save_ingredients(self.state)
+        self.refresh_list()
+
+        if self.on_ingredients_changed:
+            self.on_ingredients_changed()
+
+        show_info("Saved", f"Ingredient '{ingredient_id}' saved.")
+
+    def delete_ingredient(self):
+        if not self.current_editing_id:
+            show_warning("No Selection", "Select an ingredient to delete.")
+            return
+
+        in_use, recipes = is_ingredient_in_use(self.current_editing_id, self.state.recipe_library)
+        if in_use:
+            show_error("Cannot Delete", f"Ingredient '{self.current_editing_id}' is used in recipes:\n{', '.join(recipes)}")
+            return
+
+        if ask_yes_no("Confirm Delete", f"Delete ingredient '{self.current_editing_id}'?"):
+            del self.state.ingredient_library[self.current_editing_id]
+            save_ingredients(self.state)
+            self.clear_form()
+            self.refresh_list()
+
+            if self.on_ingredients_changed:
+                self.on_ingredients_changed()
