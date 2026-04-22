@@ -3,16 +3,25 @@ from src.state.taxonomy import CATEGORIES, ZONES, FACTIONS
 from src.services.validation_service import sanitize_id
 
 class TaxonomyGenerator(ctk.CTkFrame):
-    def __init__(self, master, force_category=None, **kwargs):
+    def __init__(self, master, force_category=None, allowed_categories=None, on_change=None, **kwargs):
         super().__init__(master, **kwargs)
         self.force_category = force_category
+        self.allowed_categories = allowed_categories
+        self.on_change = on_change
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
 
         # Category
         ctk.CTkLabel(self, text="Category:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        cat_values = [self.force_category] if self.force_category else list(CATEGORIES.keys())
+
+        if self.force_category:
+            cat_values = [self.force_category]
+        elif self.allowed_categories:
+            cat_values = self.allowed_categories
+        else:
+            cat_values = list(CATEGORIES.keys())
+
         self.cat_combo = ctk.CTkComboBox(self, values=cat_values, command=self._update_subcategories)
         self.cat_combo.grid(row=0, column=1, sticky="w", padx=5, pady=2)
         if cat_values:
@@ -61,6 +70,13 @@ class TaxonomyGenerator(ctk.CTkFrame):
     def _update_preview(self, event=None):
         preview = self.generate_id()
         self.preview_label.configure(text=preview)
+        # Avoid firing on_change if taxonomy_generator isn't fully bound in parent yet
+        if hasattr(self, 'cat_combo') and self.on_change:
+            # We also wrap in try/except because parent might not have fully initialized its fields
+            try:
+                self.on_change()
+            except AttributeError:
+                pass
 
     def generate_id(self):
         parts = []

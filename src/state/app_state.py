@@ -1,6 +1,7 @@
 class AppState:
     def __init__(self):
         self.ingredient_library = {}
+        self.equipment_library = {}
         self.recipe_library = {}
 
         self.active_input_rows = []

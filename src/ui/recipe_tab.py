@@ -2,6 +2,7 @@ import customtkinter as ctk
 from src.ui.components.shared_widgets import create_labeled_entry, create_labeled_textbox
 from src.ui.components.dynamic_rows import DynamicRowContainer
 from src.ui.components.taxonomy_generator import TaxonomyGenerator
+from src.ui.components.tooltip_preview import TooltipPreview
 from src.ui.dialogs import show_error, show_info, ask_yes_no
 from src.services.validation_service import sanitize_id, validate_recipe
 from src.services.storage_service import save_recipes
@@ -13,10 +14,12 @@ class RecipeTab(ctk.CTkFrame):
         self.current_editing_id = None
 
         self.grid_columnconfigure(0, weight=2)
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         self.setup_form_panel()
+        self.setup_preview_panel()
         self.setup_list_panel()
         self.refresh_list()
 
@@ -29,13 +32,14 @@ class RecipeTab(ctk.CTkFrame):
         meta_frame.pack(fill="x", pady=5)
         ctk.CTkLabel(meta_frame, text="Recipe Metadata", font=("Arial", 16, "bold")).pack(pady=5)
 
-        self.taxonomy = TaxonomyGenerator(meta_frame, force_category="recipe")
+        self.taxonomy = TaxonomyGenerator(meta_frame, force_category="recipe", on_change=self.update_preview)
         self.taxonomy.pack(fill="x", padx=10, pady=5)
 
         props_frame = ctk.CTkFrame(meta_frame, fg_color="transparent")
         props_frame.pack(fill="x", padx=10, pady=5)
 
         self.name_entry = create_labeled_entry(props_frame, "Recipe Name:", 0, 0)
+        self.name_entry.bind("<KeyRelease>", lambda e: self.update_preview())
         self.station_entry = create_labeled_entry(props_frame, "Station:", 1, 0, default_val="forge")
 
         # Dynamic Rows
@@ -62,6 +66,7 @@ class RecipeTab(ctk.CTkFrame):
         notes_frame = ctk.CTkFrame(self.form_scroll, fg_color="transparent")
         notes_frame.pack(fill="x", pady=5)
         self.notes_text = create_labeled_textbox(notes_frame, "Notes:", 0, 0, width=400, height=80)
+        self.notes_text.bind("<KeyRelease>", lambda e: self.update_preview())
 
         # Buttons
         btn_frame = ctk.CTkFrame(self.form_scroll, fg_color="transparent")
@@ -70,9 +75,33 @@ class RecipeTab(ctk.CTkFrame):
         ctk.CTkButton(btn_frame, text="Save", command=self.save_recipe, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Delete", command=self.delete_recipe, width=80, fg_color="red", hover_color="darkred").pack(side="left", padx=5)
 
+    def setup_preview_panel(self):
+        preview_frame = ctk.CTkFrame(self, fg_color="transparent")
+        preview_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=10)
+        ctk.CTkLabel(preview_frame, text="Tooltip Preview", font=("Arial", 16, "bold")).pack(pady=10)
+        self.tooltip = TooltipPreview(preview_frame)
+        self.tooltip.pack(pady=5)
+
+    def _build_data_dict(self):
+        taxonomy_data = self.taxonomy.get_data()
+        return {
+            "name": self.name_entry.get().strip(),
+            "taxonomy": taxonomy_data,
+            "category": taxonomy_data["subcategory"], # Backward compatibility for validation
+            "station": self.station_entry.get().strip(),
+            "inputs": self.inputs_container.get_data(),
+            "outputs": self.outputs_container.get_data(),
+            "costs": self.costs_container.get_data(),
+            "notes": self.notes_text.get("1.0", "end-1c").strip()
+        }
+
+    def update_preview(self):
+        data = self._build_data_dict()
+        self.tooltip.update_preview(data)
+
     def setup_list_panel(self):
         self.list_frame = ctk.CTkFrame(self)
-        self.list_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+        self.list_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
 
         ctk.CTkLabel(self.list_frame, text="Recipe Library", font=("Arial", 16, "bold")).pack(pady=10)
 
@@ -82,7 +111,8 @@ class RecipeTab(ctk.CTkFrame):
         self.list_buttons = []
 
     def get_ingredient_options(self):
-        return sorted(list(self.state.ingredient_library.keys()))
+        options = list(self.state.ingredient_library.keys()) + list(self.state.equipment_library.keys())
+        return sorted(options)
 
     def refresh_ingredient_dropdowns(self):
         self.inputs_container.refresh_options()
@@ -98,6 +128,7 @@ class RecipeTab(ctk.CTkFrame):
         self.inputs_container.clear_rows()
         self.outputs_container.clear_rows()
         self.costs_container.clear_rows()
+        self.update_preview()
 
     def load_into_form(self, recipe_id):
         data = self.state.recipe_library.get(recipe_id)
@@ -122,6 +153,8 @@ class RecipeTab(ctk.CTkFrame):
         for k, v in data.get("costs", {}).items():
             self.costs_container.add_row(k, v)
 
+        self.update_preview()
+
     def refresh_list(self):
         for btn in self.list_buttons:
             btn.destroy()
@@ -136,19 +169,8 @@ class RecipeTab(ctk.CTkFrame):
             self.list_buttons.append(btn)
 
     def save_recipe(self):
-        taxonomy_data = self.taxonomy.get_data()
-        recipe_id = taxonomy_data["generated_id"]
-
-        data = {
-            "name": self.name_entry.get().strip(),
-            "taxonomy": taxonomy_data,
-            "category": taxonomy_data["subcategory"], # Backward compatibility for validation
-            "station": self.station_entry.get().strip(),
-            "inputs": self.inputs_container.get_data(),
-            "outputs": self.outputs_container.get_data(),
-            "costs": self.costs_container.get_data(),
-            "notes": self.notes_text.get("1.0", "end-1c").strip()
-        }
+        data = self._build_data_dict()
+        recipe_id = data["taxonomy"]["generated_id"]
 
         is_valid, error_msg = validate_recipe(recipe_id, data, self.state, self.current_editing_id)
 

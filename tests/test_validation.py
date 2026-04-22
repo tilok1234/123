@@ -23,6 +23,7 @@ def test_validate_ingredient_invalid():
 def test_validate_recipe_valid():
     state = AppState()
     state.ingredient_library = {"iron": {}}
+    state.equipment_library = {}
     data = {
         "name": "Iron Sword",
         "category": "weapon",
@@ -36,6 +37,7 @@ def test_validate_recipe_valid():
 def test_validate_recipe_missing_ingredient():
     state = AppState()
     state.ingredient_library = {}
+    state.equipment_library = {}
     data = {
         "name": "Iron Sword",
         "category": "weapon",
@@ -45,3 +47,22 @@ def test_validate_recipe_missing_ingredient():
     is_valid, msg = validate_recipe("iron_sword", data, state)
     assert is_valid == False
     assert "does not exist" in msg
+
+def test_validate_equipment():
+    from src.services.validation_service import validate_equipment
+    state = AppState()
+
+    # Valid equipment
+    data = {
+        "display_name": "Test Sword",
+        "taxonomy": {"category": "weapon"},
+        "stats": {"str": 10, "dmg": 50, "range": 1.5, "cooldown": 0.8}
+    }
+    is_valid, msg = validate_equipment("weapon_sword_test", data, state)
+    assert is_valid == True
+
+    # Invalid equipment (negative string)
+    data["stats"]["str"] = -5
+    is_valid, msg = validate_equipment("weapon_sword_test", data, state)
+    assert is_valid == False
+    assert "STR must be >= 0" in msg

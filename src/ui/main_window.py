@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from src.ui.ingredient_tab import IngredientTab
 from src.ui.recipe_tab import RecipeTab
+from src.ui.equipment_tab import EquipmentTab
 from src.services.export_service import export_data
 from src.ui.dialogs import show_info, show_error
 
@@ -26,17 +27,21 @@ class MainWindow(ctk.CTk):
         self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
 
         self.tabview.add("Ingredients")
+        self.tabview.add("Equipment")
         self.tabview.add("Recipes")
 
         # Add Tabs
-        self.ingredient_tab = IngredientTab(self.tabview.tab("Ingredients"), self.app_state, on_ingredients_changed=self.on_ingredients_changed)
+        self.ingredient_tab = IngredientTab(self.tabview.tab("Ingredients"), self.app_state, on_ingredients_changed=self.on_library_changed)
         self.ingredient_tab.pack(fill="both", expand=True)
+
+        self.equipment_tab = EquipmentTab(self.tabview.tab("Equipment"), self.app_state, on_equipment_changed=self.on_library_changed)
+        self.equipment_tab.pack(fill="both", expand=True)
 
         self.recipe_tab = RecipeTab(self.tabview.tab("Recipes"), self.app_state)
         self.recipe_tab.pack(fill="both", expand=True)
 
-    def on_ingredients_changed(self):
-        # Refresh the recipe tab dropdowns when ingredients change
+    def on_library_changed(self):
+        # Refresh the recipe tab dropdowns when ingredients or equipment change
         self.recipe_tab.refresh_ingredient_dropdowns()
 
     def do_export(self):

@@ -1,10 +1,12 @@
 import customtkinter as ctk
 from src.ui.components.shared_widgets import create_labeled_entry
 from src.ui.components.taxonomy_generator import TaxonomyGenerator
+from src.ui.components.tooltip_preview import TooltipPreview
 from src.ui.dialogs import show_error, show_info, ask_yes_no
 from src.services.validation_service import sanitize_id, validate_ingredient
 from src.services.dependency_service import is_ingredient_in_use
 from src.services.storage_service import save_ingredients
+from src.state.taxonomy import CATEGORIES
 
 class IngredientTab(ctk.CTkFrame):
     def __init__(self, master, state, on_ingredients_changed=None, **kwargs):
@@ -13,42 +15,70 @@ class IngredientTab(ctk.CTkFrame):
         self.on_ingredients_changed = on_ingredients_changed
         self.current_editing_id = None
 
-        # Split into left (form) and right (list)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=2)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         self.setup_form_panel()
+        self.setup_preview_panel()
         self.setup_list_panel()
 
         self.refresh_list()
 
     def setup_form_panel(self):
-        self.form_frame = ctk.CTkFrame(self)
-        self.form_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.form_scroll = ctk.CTkScrollableFrame(self)
+        self.form_scroll.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        ctk.CTkLabel(self.form_frame, text="Ingredient Details", font=("Arial", 16, "bold")).pack(pady=10)
+        ctk.CTkLabel(self.form_scroll, text="Ingredient Details", font=("Arial", 16, "bold")).pack(pady=10)
 
-        self.taxonomy = TaxonomyGenerator(self.form_frame)
+        allowed = [k for k in CATEGORIES.keys() if k not in ["weapon", "gear", "pet", "recipe"]]
+        self.taxonomy = TaxonomyGenerator(
+            self.form_scroll,
+            allowed_categories=allowed,
+            on_change=self.update_preview
+        )
         self.taxonomy.pack(fill="x", padx=10, pady=5)
 
-        props_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        props_frame = ctk.CTkFrame(self.form_scroll, fg_color="transparent")
         props_frame.pack(fill="x", padx=10, pady=5)
 
         self.name_entry = create_labeled_entry(props_frame, "Display Name:", 0, 0)
+        self.name_entry.bind("<KeyRelease>", lambda e: self.update_preview())
         self.value_entry = create_labeled_entry(props_frame, "Base Value:", 1, 0, default_val="0")
+        self.value_entry.bind("<KeyRelease>", lambda e: self.update_preview())
         self.stack_entry = create_labeled_entry(props_frame, "Max Stack:", 2, 0, default_val="99")
 
-        btn_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        btn_frame = ctk.CTkFrame(self.form_scroll, fg_color="transparent")
         btn_frame.pack(pady=20)
 
         ctk.CTkButton(btn_frame, text="New", command=self.clear_form, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Save", command=self.save_ingredient, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Delete", command=self.delete_ingredient, width=80, fg_color="red", hover_color="darkred").pack(side="left", padx=5)
 
+    def setup_preview_panel(self):
+        preview_frame = ctk.CTkFrame(self, fg_color="transparent")
+        preview_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=10)
+        ctk.CTkLabel(preview_frame, text="Tooltip Preview", font=("Arial", 16, "bold")).pack(pady=10)
+        self.tooltip = TooltipPreview(preview_frame)
+        self.tooltip.pack(pady=5)
+
+    def _build_data_dict(self):
+        taxonomy_data = self.taxonomy.get_data()
+        return {
+            "display_name": self.name_entry.get().strip(),
+            "taxonomy": taxonomy_data,
+            "base_value": self.value_entry.get().strip(),
+            "max_stack": self.stack_entry.get().strip()
+        }
+
+    def update_preview(self):
+        data = self._build_data_dict()
+        self.tooltip.update_preview(data)
+
     def setup_list_panel(self):
         self.list_frame = ctk.CTkFrame(self)
-        self.list_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+        self.list_frame.grid(row=0, column=2, sticky="nsew", padx=10, pady=10)
 
         ctk.CTkLabel(self.list_frame, text="Ingredients Library", font=("Arial", 16, "bold")).pack(pady=10)
 
@@ -65,6 +95,7 @@ class IngredientTab(ctk.CTkFrame):
         self.value_entry.insert(0, "0")
         self.stack_entry.delete(0, 'end')
         self.stack_entry.insert(0, "99")
+        self.update_preview()
 
     def load_into_form(self, ingredient_id):
         data = self.state.ingredient_library.get(ingredient_id)
@@ -81,6 +112,7 @@ class IngredientTab(ctk.CTkFrame):
 
         self.stack_entry.delete(0, 'end')
         self.stack_entry.insert(0, str(data.get("max_stack", 99)))
+        self.update_preview()
 
     def refresh_list(self):
         for btn in self.list_buttons:
@@ -96,15 +128,8 @@ class IngredientTab(ctk.CTkFrame):
             self.list_buttons.append(btn)
 
     def save_ingredient(self):
-        taxonomy_data = self.taxonomy.get_data()
-        ingredient_id = taxonomy_data["generated_id"]
-
-        data = {
-            "display_name": self.name_entry.get().strip(),
-            "taxonomy": taxonomy_data,
-            "base_value": self.value_entry.get().strip(),
-            "max_stack": self.stack_entry.get().strip()
-        }
+        data = self._build_data_dict()
+        ingredient_id = data["taxonomy"]["generated_id"]
 
         is_valid, error_msg = validate_ingredient(ingredient_id, data, self.state, self.current_editing_id)
 

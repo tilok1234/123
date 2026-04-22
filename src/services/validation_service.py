@@ -30,6 +30,32 @@ def validate_ingredient(ingredient_id, data, state, original_id=None):
 
     return True, ""
 
+def validate_equipment(equip_id, data, state, original_id=None):
+    if not equip_id:
+        return False, "ID cannot be empty."
+    if not data.get("display_name"):
+        return False, "Display name cannot be empty."
+
+    # Validate numeric stats
+    stats = ["str", "hp", "dex", "atk", "vit", "spd"]
+    if data.get("taxonomy", {}).get("category") == "weapon":
+        stats.extend(["dmg", "cooldown", "range"])
+
+    for stat in stats:
+        val = data.get("stats", {}).get(stat, 0)
+        try:
+            val = float(val) if stat in ["cooldown", "range"] else int(val)
+            if val < 0:
+                return False, f"{stat.upper()} must be >= 0."
+            data["stats"][stat] = val
+        except ValueError:
+            return False, f"{stat.upper()} must be a number."
+
+    if equip_id != original_id and equip_id in state.equipment_library:
+        return False, f"Equipment ID '{equip_id}' already exists."
+
+    return True, ""
+
 def validate_recipe(recipe_id, data, state, original_id=None):
     if not recipe_id:
         return False, "Recipe ID cannot be empty."
@@ -45,8 +71,8 @@ def validate_recipe(recipe_id, data, state, original_id=None):
 
     # Validate inputs
     for ing_id, qty in data.get("inputs", {}).items():
-        if ing_id not in state.ingredient_library:
-            return False, f"Input ingredient '{ing_id}' does not exist."
+        if ing_id not in state.ingredient_library and ing_id not in state.equipment_library:
+            return False, f"Input item '{ing_id}' does not exist."
         try:
             qty = int(qty)
             if qty <= 0:
@@ -57,7 +83,7 @@ def validate_recipe(recipe_id, data, state, original_id=None):
 
     # Validate outputs
     for ing_id, qty in data.get("outputs", {}).items():
-        if ing_id not in state.ingredient_library:
+        if ing_id not in state.ingredient_library and ing_id not in state.equipment_library:
             return False, f"Output item '{ing_id}' does not exist."
         try:
             qty = int(qty)
