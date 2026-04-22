@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from src.ui.components.shared_widgets import create_labeled_entry
+from src.ui.components.taxonomy_generator import TaxonomyGenerator
 from src.ui.dialogs import show_error, show_info, ask_yes_no
 from src.services.validation_service import sanitize_id, validate_ingredient
 from src.services.dependency_service import is_ingredient_in_use
@@ -26,20 +27,20 @@ class IngredientTab(ctk.CTkFrame):
         self.form_frame = ctk.CTkFrame(self)
         self.form_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        ctk.CTkLabel(self.form_frame, text="Ingredient Details", font=("Arial", 16, "bold")).grid(row=0, column=0, columnspan=2, pady=10)
+        ctk.CTkLabel(self.form_frame, text="Ingredient Details", font=("Arial", 16, "bold")).pack(pady=10)
 
-        self.id_entry = create_labeled_entry(self.form_frame, "Internal ID:", 1, 0)
-        self.name_entry = create_labeled_entry(self.form_frame, "Display Name:", 2, 0)
+        self.taxonomy = TaxonomyGenerator(self.form_frame)
+        self.taxonomy.pack(fill="x", padx=10, pady=5)
 
-        self.type_combo = ctk.CTkComboBox(self.form_frame, values=["material", "consumable", "quest_item"])
-        ctk.CTkLabel(self.form_frame, text="Item Type:").grid(row=3, column=0, sticky="w", padx=5, pady=2)
-        self.type_combo.grid(row=3, column=1, sticky="w", padx=5, pady=2)
+        props_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        props_frame.pack(fill="x", padx=10, pady=5)
 
-        self.value_entry = create_labeled_entry(self.form_frame, "Base Value:", 4, 0, default_val="0")
-        self.stack_entry = create_labeled_entry(self.form_frame, "Max Stack:", 5, 0, default_val="99")
+        self.name_entry = create_labeled_entry(props_frame, "Display Name:", 0, 0)
+        self.value_entry = create_labeled_entry(props_frame, "Base Value:", 1, 0, default_val="0")
+        self.stack_entry = create_labeled_entry(props_frame, "Max Stack:", 2, 0, default_val="99")
 
         btn_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
-        btn_frame.grid(row=6, column=0, columnspan=2, pady=20)
+        btn_frame.pack(pady=20)
 
         ctk.CTkButton(btn_frame, text="New", command=self.clear_form, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Save", command=self.save_ingredient, width=80).pack(side="left", padx=5)
@@ -58,9 +59,8 @@ class IngredientTab(ctk.CTkFrame):
 
     def clear_form(self):
         self.current_editing_id = None
-        self.id_entry.delete(0, 'end')
+        self.taxonomy.clear_form()
         self.name_entry.delete(0, 'end')
-        self.type_combo.set("material")
         self.value_entry.delete(0, 'end')
         self.value_entry.insert(0, "0")
         self.stack_entry.delete(0, 'end')
@@ -73,9 +73,8 @@ class IngredientTab(ctk.CTkFrame):
         self.clear_form()
         self.current_editing_id = ingredient_id
 
-        self.id_entry.insert(0, ingredient_id)
+        self.taxonomy.load_data(data.get("taxonomy", {}))
         self.name_entry.insert(0, data.get("display_name", ""))
-        self.type_combo.set(data.get("item_type", "material"))
 
         self.value_entry.delete(0, 'end')
         self.value_entry.insert(0, str(data.get("base_value", 0)))
@@ -97,16 +96,12 @@ class IngredientTab(ctk.CTkFrame):
             self.list_buttons.append(btn)
 
     def save_ingredient(self):
-        raw_id = self.id_entry.get()
-        ingredient_id = sanitize_id(raw_id)
-
-        if raw_id != ingredient_id:
-            self.id_entry.delete(0, 'end')
-            self.id_entry.insert(0, ingredient_id)
+        taxonomy_data = self.taxonomy.get_data()
+        ingredient_id = taxonomy_data["generated_id"]
 
         data = {
             "display_name": self.name_entry.get().strip(),
-            "item_type": self.type_combo.get(),
+            "taxonomy": taxonomy_data,
             "base_value": self.value_entry.get().strip(),
             "max_stack": self.stack_entry.get().strip()
         }

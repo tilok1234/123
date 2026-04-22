@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from src.ui.components.shared_widgets import create_labeled_entry, create_labeled_textbox
 from src.ui.components.dynamic_rows import DynamicRowContainer
+from src.ui.components.taxonomy_generator import TaxonomyGenerator
 from src.ui.dialogs import show_error, show_info, ask_yes_no
 from src.services.validation_service import sanitize_id, validate_recipe
 from src.services.storage_service import save_recipes
@@ -26,12 +27,16 @@ class RecipeTab(ctk.CTkFrame):
         # Meta
         meta_frame = ctk.CTkFrame(self.form_scroll)
         meta_frame.pack(fill="x", pady=5)
-        ctk.CTkLabel(meta_frame, text="Recipe Metadata", font=("Arial", 16, "bold")).grid(row=0, column=0, columnspan=2, pady=5)
+        ctk.CTkLabel(meta_frame, text="Recipe Metadata", font=("Arial", 16, "bold")).pack(pady=5)
 
-        self.id_entry = create_labeled_entry(meta_frame, "Recipe ID:", 1, 0)
-        self.name_entry = create_labeled_entry(meta_frame, "Recipe Name:", 2, 0)
-        self.cat_entry = create_labeled_entry(meta_frame, "Category:", 3, 0, default_val="weapon")
-        self.station_entry = create_labeled_entry(meta_frame, "Station:", 4, 0, default_val="forge")
+        self.taxonomy = TaxonomyGenerator(meta_frame, force_category="recipe")
+        self.taxonomy.pack(fill="x", padx=10, pady=5)
+
+        props_frame = ctk.CTkFrame(meta_frame, fg_color="transparent")
+        props_frame.pack(fill="x", padx=10, pady=5)
+
+        self.name_entry = create_labeled_entry(props_frame, "Recipe Name:", 0, 0)
+        self.station_entry = create_labeled_entry(props_frame, "Station:", 1, 0, default_val="forge")
 
         # Dynamic Rows
         self.inputs_container = DynamicRowContainer(
@@ -85,9 +90,8 @@ class RecipeTab(ctk.CTkFrame):
 
     def clear_form(self):
         self.current_editing_id = None
-        self.id_entry.delete(0, 'end')
+        self.taxonomy.clear_form()
         self.name_entry.delete(0, 'end')
-        self.cat_entry.delete(0, 'end')
         self.station_entry.delete(0, 'end')
         self.notes_text.delete("1.0", "end")
 
@@ -102,9 +106,8 @@ class RecipeTab(ctk.CTkFrame):
         self.clear_form()
         self.current_editing_id = recipe_id
 
-        self.id_entry.insert(0, recipe_id)
+        self.taxonomy.load_data(data.get("taxonomy", {}))
         self.name_entry.insert(0, data.get("name", ""))
-        self.cat_entry.insert(0, data.get("category", ""))
         self.station_entry.insert(0, data.get("station", ""))
 
         if "notes" in data:
@@ -133,16 +136,13 @@ class RecipeTab(ctk.CTkFrame):
             self.list_buttons.append(btn)
 
     def save_recipe(self):
-        raw_id = self.id_entry.get()
-        recipe_id = sanitize_id(raw_id)
-
-        if raw_id != recipe_id:
-            self.id_entry.delete(0, 'end')
-            self.id_entry.insert(0, recipe_id)
+        taxonomy_data = self.taxonomy.get_data()
+        recipe_id = taxonomy_data["generated_id"]
 
         data = {
             "name": self.name_entry.get().strip(),
-            "category": self.cat_entry.get().strip(),
+            "taxonomy": taxonomy_data,
+            "category": taxonomy_data["subcategory"], # Backward compatibility for validation
             "station": self.station_entry.get().strip(),
             "inputs": self.inputs_container.get_data(),
             "outputs": self.outputs_container.get_data(),
