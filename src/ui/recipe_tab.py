@@ -54,8 +54,9 @@ class RecipeTab(ctk.CTkFrame):
         self.costs_container.pack(fill="x", pady=5)
 
         # Notes
-        self.notes_text = create_labeled_textbox(self.form_scroll, "Notes:", 5, 0, width=400, height=80)
-        self.notes_text.master.pack(fill="x", pady=5)
+        notes_frame = ctk.CTkFrame(self.form_scroll, fg_color="transparent")
+        notes_frame.pack(fill="x", pady=5)
+        self.notes_text = create_labeled_textbox(notes_frame, "Notes:", 0, 0, width=400, height=80)
 
         # Buttons
         btn_frame = ctk.CTkFrame(self.form_scroll, fg_color="transparent")

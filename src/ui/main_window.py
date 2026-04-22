@@ -5,9 +5,9 @@ from src.services.export_service import export_data
 from src.ui.dialogs import show_info, show_error
 
 class MainWindow(ctk.CTk):
-    def __init__(self, state):
+    def __init__(self, app_state):
         super().__init__()
-        self.state = state
+        self.app_state = app_state
 
         self.title("Crafting Recipe Creator")
         self.geometry("1000x700")
@@ -29,10 +29,10 @@ class MainWindow(ctk.CTk):
         self.tabview.add("Recipes")
 
         # Add Tabs
-        self.ingredient_tab = IngredientTab(self.tabview.tab("Ingredients"), self.state, on_ingredients_changed=self.on_ingredients_changed)
+        self.ingredient_tab = IngredientTab(self.tabview.tab("Ingredients"), self.app_state, on_ingredients_changed=self.on_ingredients_changed)
         self.ingredient_tab.pack(fill="both", expand=True)
 
-        self.recipe_tab = RecipeTab(self.tabview.tab("Recipes"), self.state)
+        self.recipe_tab = RecipeTab(self.tabview.tab("Recipes"), self.app_state)
         self.recipe_tab.pack(fill="both", expand=True)
 
     def on_ingredients_changed(self):
@@ -40,7 +40,7 @@ class MainWindow(ctk.CTk):
         self.recipe_tab.refresh_ingredient_dropdowns()
 
     def do_export(self):
-        success, msg = export_data(self.state)
+        success, msg = export_data(self.app_state)
         if success:
             show_info("Export Complete", msg)
         else:
