@@ -81,6 +81,7 @@ class EquipmentTab(ctk.CTkFrame):
         btn_frame.pack(pady=20)
 
         ctk.CTkButton(btn_frame, text="New", command=self.clear_form, width=80).pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Clone", command=self.clone_equipment, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Save", command=self.save_equipment, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Delete", command=self.delete_equipment, width=80, fg_color="red", hover_color="darkred").pack(side="left", padx=5)
 
@@ -119,6 +120,18 @@ class EquipmentTab(ctk.CTkFrame):
     def update_preview(self):
         data = self._build_data_dict()
         self.tooltip.update_preview(data)
+
+    def clone_equipment(self):
+        if not self.current_editing_id:
+            show_warning("No Selection", "Select equipment to clone first.")
+            return
+
+        self.current_editing_id = None
+        current_name = self.name_entry.get()
+        self.name_entry.delete(0, 'end')
+        self.name_entry.insert(0, f"{current_name} Copy")
+        self.update_preview()
+        show_info("Cloned", "Equipment cloned. Edit the name and click Save to create a new entry.")
 
     def clear_form(self):
         self.current_editing_id = None

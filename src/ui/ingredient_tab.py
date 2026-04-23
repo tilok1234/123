@@ -53,6 +53,7 @@ class IngredientTab(ctk.CTkFrame):
         btn_frame.pack(pady=20)
 
         ctk.CTkButton(btn_frame, text="New", command=self.clear_form, width=80).pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Clone", command=self.clone_ingredient, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Save", command=self.save_ingredient, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Delete", command=self.delete_ingredient, width=80, fg_color="red", hover_color="darkred").pack(side="left", padx=5)
 
@@ -86,6 +87,18 @@ class IngredientTab(ctk.CTkFrame):
         self.listbox.pack(fill="both", expand=True, padx=5, pady=5)
 
         self.list_buttons = []
+
+    def clone_ingredient(self):
+        if not self.current_editing_id:
+            show_warning("No Selection", "Select an ingredient to clone first.")
+            return
+
+        self.current_editing_id = None
+        current_name = self.name_entry.get()
+        self.name_entry.delete(0, 'end')
+        self.name_entry.insert(0, f"{current_name} Copy")
+        self.update_preview()
+        show_info("Cloned", "Ingredient cloned. Edit the name and click Save to create a new entry.")
 
     def clear_form(self):
         self.current_editing_id = None
