@@ -19,8 +19,8 @@ class EquipmentTab(ctk.CTkFrame):
         self.grid_columnconfigure(2, weight=1) # List
         self.grid_rowconfigure(0, weight=1)
 
-        self.setup_form_panel()
         self.setup_preview_panel()
+        self.setup_form_panel()
         self.setup_list_panel()
 
         self.refresh_list()

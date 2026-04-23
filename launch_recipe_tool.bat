@@ -5,14 +5,17 @@ cd /d "%~dp0"
 if not exist venv\Scripts\python.exe (
     echo Creating virtual environment...
     py -m venv venv
-    call venv\Scripts\activate.bat
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-) else (
-    call venv\Scripts\activate.bat
+    "venv\Scripts\python.exe" -m pip install --upgrade pip
+    "venv\Scripts\python.exe" -m pip install -r requirements.txt
 )
 
-python src\main.py
+echo Launching Crafting Recipe Creator...
+"venv\Scripts\python.exe" src\main.py
 
-call venv\Scripts\deactivate.bat
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo The application crashed or an error occurred.
+    pause
+)
+
 endlocal
