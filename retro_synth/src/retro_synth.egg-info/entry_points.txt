@@ -1,0 +1,2 @@
+[console_scripts]
+retro-synth = retro_synth.app:main
