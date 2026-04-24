@@ -8,7 +8,7 @@
     "sprite": { "type": "string" },
     "hitboxRadius": { "type": "number" },
     "damage": { "type": "number", "default": 1 },
-    "movement": { "$ref": "src/schema/movement.schema.json" }
+    "movement": { "$ref": "movement.schema.json" }
   },
   "required": ["id", "sprite", "hitboxRadius"]
 }
