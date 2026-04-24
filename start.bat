@@ -1,11 +1,26 @@
 @echo off
+setlocal
+
 echo Starting Enemy Fight Planner Demo...
+
+:: Check if npm is available in PATH
+where npm >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo ERROR: 'npm' is not recognized.
+    echo Node.js does not appear to be installed, or it is not in your system's PATH.
+    echo Please install Node.js from https://nodejs.org/ or run this script from a Terminal where Node is accessible.
+    echo.
+    goto end
+)
+
 cd enemy-fight-planner
 
 echo Installing dependencies...
-call npm.cmd install
+call npm install
 
 echo Running demo...
-call npm.cmd start
+call npm start
 
+:end
 pause
