@@ -1,0 +1,28 @@
+{
+  "id": "sweeping_arc",
+  "params": {
+    "count": 10,
+    "speed": 5,
+    "delay": 3,
+    "startAngle": 135,
+    "endAngle": 45
+  },
+  "ops": [
+    {
+      "type": "Loop",
+      "count": "count",
+      "ops": [
+        {
+          "type": "Fire",
+          "projectile": "bullet_knife",
+          "angle": "lerp(startAngle, endAngle, i / max(1, count - 1))",
+          "speed": "speed"
+        },
+        {
+          "type": "Wait",
+          "ticks": "delay"
+        }
+      ]
+    }
+  ]
+}

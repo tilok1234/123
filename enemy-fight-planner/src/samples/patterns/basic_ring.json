@@ -1,0 +1,17 @@
+{
+  "id": "basic_ring",
+  "params": {
+    "count": 12,
+    "speed": 3,
+    "radius": 0
+  },
+  "ops": [
+    {
+      "type": "FireRing",
+      "projectile": "bullet_round",
+      "count": "count",
+      "speed": "speed",
+      "radius": "radius"
+    }
+  ]
+}

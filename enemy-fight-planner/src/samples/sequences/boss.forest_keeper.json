@@ -1,0 +1,77 @@
+{
+  "id": "boss.forest_keeper",
+  "ops": [
+    {
+      "type": "MoveToPath",
+      "pathId": "intro_descent",
+      "duration": 60
+    },
+    {
+      "type": "Wait",
+      "ticks": 30
+    },
+    {
+      "type": "StartPattern",
+      "patternId": "double_spiral",
+      "slot": "main"
+    },
+    {
+      "type": "PhaseTransition",
+      "hpPercent": 0.5,
+      "ops": [
+        {
+          "type": "StopPattern",
+          "slot": "main"
+        },
+        {
+          "type": "ClearBullets",
+          "radius": 9999,
+          "convertToDrop": true
+        },
+        {
+          "type": "MoveToPath",
+          "pathId": "center",
+          "duration": 60
+        },
+        {
+          "type": "Wait",
+          "ticks": 30
+        },
+        {
+          "type": "StartPattern",
+          "patternId": "phase_flower",
+          "slot": "main"
+        },
+        {
+          "type": "StartPattern",
+          "patternId": "sweeping_arc",
+          "slot": "sub"
+        },
+        {
+          "type": "PhaseTransition",
+          "hpPercent": 0.0,
+          "ops": [
+            {
+              "type": "StopPattern",
+              "slot": "main"
+            },
+            {
+              "type": "StopPattern",
+              "slot": "sub"
+            },
+            {
+              "type": "ClearBullets",
+              "radius": 9999,
+              "convertToDrop": true
+            },
+            {
+              "type": "SpawnDrop",
+              "dropId": "reward_chest",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
