@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enemy Fight Planner Preview</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #1a1a1a;
+        color: #fff;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      canvas {
+        background-color: #000;
+        border: 2px solid #333;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      }
+      #controls {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 16px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      button:hover { background-color: #45a049; }
+    </style>
+  </head>
+  <body>
+    <h2>Boss Sequence Preview</h2>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="controls">
+      <button id="btnPlayPause">Pause</button>
+      <button id="btnRestart">Restart</button>
+      <span id="lblTick">Tick: 0</span>
+    </div>
+    <script type="module" src="/src/preview.ts"></script>
+  </body>
+</html>

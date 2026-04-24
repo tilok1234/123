@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-echo Starting Enemy Fight Planner Demo...
+echo Starting Enemy Fight Planner Preview...
 
 :: Check if npm is available in PATH
 where npm >nul 2>nul
@@ -19,8 +19,8 @@ cd enemy-fight-planner
 echo Installing dependencies...
 call npm install
 
-echo Running demo...
-call npm start
+echo Launching web preview server...
+call npm run dev
 
 :end
 pause
