@@ -34,7 +34,7 @@ export class Parser {
     if (this.current.type === 'Question') {
       this.next();
       const trueExpr = this.parseTernary();
-      if (this.current.type !== 'Colon') {
+      if ((this.current.type as TokenType) !== 'Colon') {
         throw new Error('Expected ":" in ternary expression');
       }
       this.next();
@@ -125,17 +125,17 @@ export class Parser {
     if (this.current.type === 'Ident') {
       const name = this.current.value;
       this.next();
-      if (this.current.type === 'LParen') {
+      if ((this.current.type as TokenType) === 'LParen') {
         this.next();
         const args: Expr[] = [];
-        if (this.current.type !== 'RParen') {
+        if ((this.current.type as TokenType) !== 'RParen') {
           args.push(this.parseTernary());
-          while (this.current.type === 'Comma') {
+          while ((this.current.type as TokenType) === 'Comma') {
             this.next();
             args.push(this.parseTernary());
           }
         }
-        if (this.current.type !== 'RParen') {
+        if ((this.current.type as TokenType) !== 'RParen') {
           throw new Error('Expected ")" after function arguments');
         }
         this.next();
@@ -146,7 +146,7 @@ export class Parser {
     if (this.current.type === 'LParen') {
       this.next();
       const expr = this.parseTernary();
-      if (this.current.type !== 'RParen') {
+      if ((this.current.type as TokenType) !== 'RParen') {
         throw new Error('Expected ")"');
       }
       this.next();
