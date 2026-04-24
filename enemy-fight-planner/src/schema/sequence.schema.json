@@ -1,0 +1,90 @@
+{
+  "$id": "sequence.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sequence",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "ops": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/SequenceOp" }
+    }
+  },
+  "required": ["id", "ops"],
+  "definitions": {
+    "SequenceOp": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" }
+      },
+      "required": ["type"],
+      "oneOf": [
+        {
+          "properties": {
+            "type": { "const": "StartPattern" },
+            "patternId": { "type": "string" },
+            "slot": { "type": "string" }
+          },
+          "required": ["patternId"]
+        },
+        {
+          "properties": {
+            "type": { "const": "StopPattern" },
+            "slot": { "type": "string" }
+          },
+          "required": ["slot"]
+        },
+        {
+          "properties": {
+            "type": { "const": "MoveToPath" },
+            "pathId": { "type": "string" },
+            "duration": { "type": ["number", "string"] }
+          },
+          "required": ["pathId", "duration"]
+        },
+        {
+          "properties": {
+            "type": { "const": "SetParam" },
+            "slot": { "type": "string" },
+            "param": { "type": "string" },
+            "value": { "type": ["number", "string"] }
+          },
+          "required": ["param", "value"]
+        },
+        {
+          "properties": {
+            "type": { "const": "ClearBullets" },
+            "radius": { "type": ["number", "string"] },
+            "convertToDrop": { "type": "boolean" }
+          }
+        },
+        {
+          "properties": {
+            "type": { "const": "PhaseTransition" },
+            "hpPercent": { "type": "number" },
+            "ops": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/SequenceOp" }
+            }
+          },
+          "required": ["hpPercent", "ops"]
+        },
+        {
+          "properties": {
+            "type": { "const": "SpawnDrop" },
+            "dropId": { "type": "string" },
+            "count": { "type": ["number", "string"] }
+          },
+          "required": ["dropId"]
+        },
+        {
+          "properties": {
+            "type": { "const": "Wait" },
+            "ticks": { "type": ["number", "string"] }
+          },
+          "required": ["ticks"]
+        }
+      ]
+    }
+  }
+}

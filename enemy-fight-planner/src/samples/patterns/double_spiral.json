@@ -1,0 +1,30 @@
+{
+  "id": "double_spiral",
+  "params": {
+    "arms": 2,
+    "shotsPerArm": 20,
+    "speed": 3,
+    "spinRate": 15,
+    "delay": 5,
+    "startAngle": 0
+  },
+  "ops": [
+    {
+      "type": "Loop",
+      "count": "shotsPerArm",
+      "ops": [
+        {
+          "type": "FireRing",
+          "projectile": "bullet_round",
+          "count": "arms",
+          "speed": "speed",
+          "radius": 0
+        },
+        {
+          "type": "Wait",
+          "ticks": "delay"
+        }
+      ]
+    }
+  ]
+}

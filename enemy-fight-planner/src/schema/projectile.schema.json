@@ -1,0 +1,14 @@
+{
+  "$id": "projectile.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Projectile",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "sprite": { "type": "string" },
+    "hitboxRadius": { "type": "number" },
+    "damage": { "type": "number", "default": 1 },
+    "movement": { "$ref": "movement.schema.json" }
+  },
+  "required": ["id", "sprite", "hitboxRadius"]
+}

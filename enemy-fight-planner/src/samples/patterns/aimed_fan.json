@@ -1,0 +1,19 @@
+{
+  "id": "aimed_fan",
+  "params": {
+    "count": 5,
+    "spread": 60,
+    "speed": 4,
+    "direction": 90
+  },
+  "ops": [
+    {
+      "type": "FireArc",
+      "projectile": "bullet_knife",
+      "count": "count",
+      "spread": "spread",
+      "direction": "direction",
+      "speed": "speed"
+    }
+  ]
+}

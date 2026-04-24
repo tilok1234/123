@@ -1,0 +1,30 @@
+{
+  "id": "phase_flower",
+  "params": {
+    "petals": 6,
+    "pulses": 3,
+    "pulseDelay": 20
+  },
+  "ops": [
+    {
+      "type": "Loop",
+      "count": "pulses",
+      "ops": [
+        {
+          "type": "FireRing",
+          "projectile": "bullet_large",
+          "count": "petals",
+          "speed": "2"
+        },
+        {
+          "type": "SpawnSubpattern",
+          "patternId": "basic_ring"
+        },
+        {
+          "type": "Wait",
+          "ticks": "pulseDelay"
+        }
+      ]
+    }
+  ]
+}
